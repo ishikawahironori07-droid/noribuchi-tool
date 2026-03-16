@@ -355,6 +355,17 @@
       color: #6b7280;
       padding: 10px 0;
     }
+    .history-total {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid #c7d2fe;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.6;
+    }
     .soft-status {
       margin-top: 10px;
       font-size: 12px;
@@ -604,7 +615,8 @@
           <button id="toggleHistoryButton" class="history-toggle" type="button">保存履歴を表示</button>
         </div>
         <div id="historySection" class="history-section">
-          <div class="actions" style="grid-template-columns: 1fr; margin-top: 0;">
+          <div id="historyTotal" class="history-total">履歴トータル収支 0円</div>
+          <div class="actions" style="grid-template-columns: 1fr; margin-top: 10px;">
             <button id="clearHistoryButton" class="secondary" type="button">保存履歴を全削除</button>
           </div>
           <div id="historyList" class="history-list"></div>
@@ -642,6 +654,7 @@
     const clearHistoryButton = document.getElementById('clearHistoryButton');
     const historySection = document.getElementById('historySection');
     const historyList = document.getElementById('historyList');
+    const historyTotal = document.getElementById('historyTotal');
     const softStatus = document.getElementById('softStatus');
     const STORAGE_KEYS = {
       nameA: 'noribuchi_name_a',
@@ -849,6 +862,9 @@
 
     function renderHistoryList() {
       const histories = getHistories();
+      const total = histories.reduce((sum, item) => sum + num(item.totalProfitValue), 0);
+      historyTotal.textContent = `履歴トータル収支 ${signedYen(total)}`;
+
       if (histories.length === 0) {
         historyList.innerHTML = '<div class="history-empty">保存された履歴はありません。</div>';
         return;
@@ -892,6 +908,10 @@
         nameB: elements.nameB.value.trim() || '参加者B',
         finalMessage: document.getElementById('finalMessage').textContent,
         totalProfitText: document.getElementById('totalProfit').textContent,
+        totalProfitValue: (() => {
+          const raw = document.getElementById('totalProfit').textContent;
+          return Number(String(raw).replace(/[^0-9+-]/g, '')) || 0;
+        })(),
         shareProfitText: document.getElementById('shareProfit').textContent,
         copyText: latestCopyText
       };
@@ -1425,10 +1445,11 @@
         refreshPresetOptions();
 
         const originalHistories = storage.getItem(STORAGE_KEYS.history);
-        setHistories([{ id: '1', playDateText: '2026/3/16', shopName: 'テスト店', nameA: 'A', nameB: 'B', finalMessage: 'AさんがBさんに1,000円渡せばフラットです', totalProfitText: '+0円', shareProfitText: '+0円', copyText: 'dummy' }]);
+        setHistories([{ id: '1', playDateText: '2026/3/16', shopName: 'テスト店', nameA: 'A', nameB: 'B', finalMessage: 'AさんがBさんに1,000円渡せばフラットです', totalProfitText: '+0円', totalProfitValue: 0, shareProfitText: '+0円', copyText: 'dummy' }]);
         console.assert(getHistories().length === 1, 'history save/load failed');
         renderHistoryList();
         console.assert(historyList.textContent.includes('テスト店'), 'renderHistoryList failed');
+        console.assert(historyTotal.textContent.includes('履歴トータル収支'), 'history total render failed');
 
         if (originalHistories === null) {
           storage.removeItem(STORAGE_KEYS.history);
