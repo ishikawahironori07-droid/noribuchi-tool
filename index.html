@@ -7,6 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="ノリ打ち精算" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <title>ノリ打ち精算ツール</title>
   <style>
     * { box-sizing: border-box; }
@@ -294,6 +297,78 @@
     .install-box p:last-child {
       margin-bottom: 0;
     }
+    .history-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .history-button {
+      width: 100%;
+      background: #0f766e;
+      color: #ffffff;
+    }
+    .history-toggle {
+      width: 100%;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .history-section {
+      display: none;
+      margin-top: 14px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 14px;
+    }
+    .history-section.show {
+      display: block;
+    }
+    .history-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .history-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px;
+      background: #f9fafb;
+    }
+    .history-item-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    .history-item-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    .history-item-text {
+      font-size: 13px;
+      color: #1f2937;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+    .history-empty {
+      font-size: 12px;
+      color: #6b7280;
+      padding: 10px 0;
+    }
+    .soft-status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      line-height: 1.6;
+      display: none;
+    }
+    .soft-status.show {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -497,6 +572,7 @@
         <button id="resetButton" class="secondary" type="button">リセット</button>
       </div>
       <p class="note">入力すると自動で再計算されます。ボタンは手動で再計算したいとき用です。</p>
+      <div id="softStatus" class="soft-status"></div>
     </section>
 
     <section id="resultSection" class="section">
@@ -522,6 +598,16 @@
         <div id="copyFallback" class="copy-fallback">
           <div class="helper">自動コピーできないため、下の文字を手動でコピーしてください。</div>
           <textarea id="copyFallbackText" readonly></textarea>
+        </div>
+        <div class="history-actions">
+          <button id="saveHistoryButton" class="history-button" type="button">この結果を履歴に保存</button>
+          <button id="toggleHistoryButton" class="history-toggle" type="button">保存履歴を表示</button>
+        </div>
+        <div id="historySection" class="history-section">
+          <div class="actions" style="grid-template-columns: 1fr; margin-top: 0;">
+            <button id="clearHistoryButton" class="secondary" type="button">保存履歴を全削除</button>
+          </div>
+          <div id="historyList" class="history-list"></div>
         </div>
       </div>
     </section>
@@ -551,10 +637,17 @@
     const savePresetButton = document.getElementById('savePresetButton');
     const deletePresetButton = document.getElementById('deletePresetButton');
     const presetNote = document.getElementById('presetNote');
+    const saveHistoryButton = document.getElementById('saveHistoryButton');
+    const toggleHistoryButton = document.getElementById('toggleHistoryButton');
+    const clearHistoryButton = document.getElementById('clearHistoryButton');
+    const historySection = document.getElementById('historySection');
+    const historyList = document.getElementById('historyList');
+    const softStatus = document.getElementById('softStatus');
     const STORAGE_KEYS = {
       nameA: 'noribuchi_name_a',
       nameB: 'noribuchi_name_b',
-      ratePresets: 'noribuchi_rate_presets'
+      ratePresets: 'noribuchi_rate_presets',
+      history: 'noribuchi_history'
     };
     let latestCopyText = '';
 
@@ -565,6 +658,9 @@
     savePresetButton.addEventListener('click', saveRatePreset);
     deletePresetButton.addEventListener('click', deleteRatePreset);
     ratePresetSelect.addEventListener('change', applySelectedPreset);
+    saveHistoryButton.addEventListener('click', saveCurrentHistory);
+    toggleHistoryButton.addEventListener('click', toggleHistorySection);
+    clearHistoryButton.addEventListener('click', clearHistory);
 
     Object.values(elements).forEach((el) => {
       if (!el) return;
@@ -733,6 +829,94 @@
       showPresetNote(`「${selectedName}」を削除しました。`);
     }
 
+    function getHistories() {
+      const storage = getStorage();
+      if (!storage) return [];
+      try {
+        const raw = storage.getItem(STORAGE_KEYS.history);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function setHistories(histories) {
+      const storage = getStorage();
+      if (!storage) return;
+      storage.setItem(STORAGE_KEYS.history, JSON.stringify(histories));
+    }
+
+    function renderHistoryList() {
+      const histories = getHistories();
+      if (histories.length === 0) {
+        historyList.innerHTML = '<div class="history-empty">保存された履歴はありません。</div>';
+        return;
+      }
+
+      historyList.innerHTML = histories.map((item) => {
+        const sub = [item.shopName || '店舗名なし', `${item.nameA} / ${item.nameB}`].join(' ｜ ');
+        return `
+          <div class="history-item">
+            <div class="history-item-header">${item.playDateText}</div>
+            <div class="history-item-sub">${sub}</div>
+            <div class="history-item-text">${item.finalMessage}
+全体収支 ${item.totalProfitText} / 1人あたり ${item.shareProfitText}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleHistorySection() {
+      const willShow = !historySection.classList.contains('show');
+      historySection.classList.toggle('show', willShow);
+      toggleHistoryButton.textContent = willShow ? '保存履歴を隠す' : '保存履歴を表示';
+      if (willShow) {
+        renderHistoryList();
+      }
+    }
+
+    function saveCurrentHistory() {
+      if (!latestCopyText) {
+        copyStatus.textContent = '先に計算結果を表示してください。';
+        return;
+      }
+
+      const histories = getHistories();
+      const entry = {
+        id: `${Date.now()}`,
+        savedAt: new Date().toISOString(),
+        playDateText: formatDateForCopy(elements.playDate.value),
+        shopName: elements.shopName.value.trim(),
+        nameA: elements.nameA.value.trim() || '参加者A',
+        nameB: elements.nameB.value.trim() || '参加者B',
+        finalMessage: document.getElementById('finalMessage').textContent,
+        totalProfitText: document.getElementById('totalProfit').textContent,
+        shareProfitText: document.getElementById('shareProfit').textContent,
+        copyText: latestCopyText
+      };
+
+      histories.unshift(entry);
+      setHistories(histories.slice(0, 50));
+      renderHistoryList();
+      historySection.classList.add('show');
+      toggleHistoryButton.textContent = '保存履歴を隠す';
+      copyStatus.textContent = '計算結果を履歴に保存しました。';
+    }
+
+    function clearHistory() {
+      const histories = getHistories();
+      if (histories.length === 0) {
+        copyStatus.textContent = '削除する履歴はありません。';
+        return;
+      }
+      const confirmed = window.confirm('保存履歴をすべて削除しますか？');
+      if (!confirmed) return;
+      setHistories([]);
+      renderHistoryList();
+      copyStatus.textContent = '保存履歴を削除しました。';
+    }
+
     function num(value) {
       const n = Number(value);
       return Number.isFinite(n) ? n : 0;
@@ -861,6 +1045,20 @@
       }
     }
 
+    function clearSoftStatus() {
+      softStatus.classList.remove('show');
+      softStatus.textContent = '';
+    }
+
+    function showSoftStatus(messages) {
+      if (!messages || messages.length === 0) {
+        clearSoftStatus();
+        return;
+      }
+      softStatus.textContent = messages.join(' / ');
+      softStatus.classList.add('show');
+    }
+
     function clearErrors() {
       errorBox.className = 'error-box';
       errorBox.innerHTML = '';
@@ -923,6 +1121,45 @@
       return errors;
     }
 
+    function getAutoInputIssues() {
+      const messages = [];
+
+      if (!elements.playDate.value) {
+        messages.push('稼働日を入力すると計算できます。');
+      }
+      if (!elements.nameA.value.trim() || !elements.nameB.value.trim()) {
+        messages.push('参加者名を入力すると精算結果を表示できます。');
+      }
+
+      const pairChecks = [
+        ['slotStartA', 'slotEndA', '参加者Aのスロ再プレイ'],
+        ['pachiStartA', 'pachiEndA', '参加者Aのパチ再プレイ'],
+        ['slotStartB', 'slotEndB', '参加者Bのスロ再プレイ'],
+        ['pachiStartB', 'pachiEndB', '参加者Bのパチ再プレイ']
+      ];
+
+      pairChecks.forEach(([startId, endId, label]) => {
+        const start = num(elements[startId].value);
+        const end = num(elements[endId].value);
+        const hasStart = elements[startId].value !== '';
+        const hasEnd = elements[endId].value !== '';
+
+        if (hasStart !== hasEnd) {
+          messages.push(`${label}は開始と終了をそろえて入力してください。`);
+        } else if (hasStart && hasEnd && end > start) {
+          messages.push(`${label}は終了数が開始数を上回らないように入力してください。`);
+        }
+      });
+
+      ['slotLoan', 'slotExchange', 'pachiLoan', 'pachiExchange'].forEach((id) => {
+        if (num(elements[id].value) <= 0) {
+          messages.push('レート設定を見直してください。');
+        }
+      });
+
+      return [...new Set(messages)];
+    }
+
     function calcParticipant(prefix, rates) {
       const cash = num(elements[`cash${prefix}`].value);
       const slotStart = num(elements[`slotStart${prefix}`].value);
@@ -954,6 +1191,7 @@
     }
 
     function setInitialResults() {
+      clearSoftStatus();
       document.getElementById('labelAInvestment').textContent = 'A 総投資額';
       document.getElementById('labelAReturn').textContent = 'A 総回収額';
       document.getElementById('labelAProfit').textContent = 'A 個人収支';
@@ -978,14 +1216,24 @@
       copyFallback.classList.remove('show');
       copyFallbackText.value = '';
       presetNote.textContent = '';
+      historySection.classList.remove('show');
+      toggleHistoryButton.textContent = '保存履歴を表示';
       latestCopyText = '';
     }
 
     function calculate(options = {}) {
       const auto = Boolean(options.auto);
+      setTodayIfEmpty();
       clearErrors();
+      if (!auto) {
+        clearSoftStatus();
+      }
+
       const errors = validate();
       if (errors.length > 0) {
+        if (auto) {
+          return false;
+        }
         showErrors(errors);
         return false;
       }
@@ -1026,11 +1274,13 @@
       const finalMessage = document.getElementById('finalMessage');
       const detailMessage = document.getElementById('detailMessage');
       copyStatus.textContent = '';
+      copyFallback.classList.remove('show');
+      copyFallbackText.value = '';
 
       if (settleA > 0) {
-        finalMessage.textContent = `${a.name}が${b.name}に${yen(settleA)}渡せばフラットです`;
+        finalMessage.textContent = `${a.name}さんが${b.name}さんに${yen(settleA)}渡せばフラットです`;
       } else if (settleA < 0) {
-        finalMessage.textContent = `${b.name}が${a.name}に${yen(Math.abs(settleA))}渡せばフラットです`;
+        finalMessage.textContent = `${b.name}さんが${a.name}さんに${yen(Math.abs(settleA))}渡せばフラットです`;
       } else {
         finalMessage.textContent = '精算なし（すでにフラットです）';
       }
@@ -1046,6 +1296,8 @@
 
     function resetForm() {
       clearErrors();
+      clearSoftStatus();
+
       document.querySelectorAll('input, textarea').forEach((el) => {
         if (el.type === 'date') {
           el.value = getTodayString();
@@ -1060,6 +1312,8 @@
       elements.pachiLoan.value = '250';
       elements.pachiExchange.value = '280';
       elements.roundUnit.value = '100';
+      refreshPresetOptions();
+      renderHistoryList();
       updateRateSummary();
       setInitialResults();
 
@@ -1067,7 +1321,9 @@
     }
 
     function handleAutoCalculate() {
+      setTodayIfEmpty();
       updateRateSummary();
+
       const hasAnyInput = [
         elements.nameA.value.trim(),
         elements.nameB.value.trim(),
@@ -1080,7 +1336,9 @@
         elements.slotReturnA.value,
         elements.slotReturnB.value,
         elements.pachiReturnA.value,
-        elements.pachiReturnB.value
+        elements.pachiReturnB.value,
+        elements.shopName.value.trim(),
+        elements.memo.value.trim()
       ].some((value) => value !== '');
 
       if (!hasAnyInput) {
@@ -1088,6 +1346,18 @@
         setInitialResults();
         return;
       }
+
+      clearErrors();
+      const autoIssues = getAutoInputIssues();
+      if (autoIssues.length > 0) {
+        showSoftStatus(autoIssues);
+        document.getElementById('finalMessage').textContent = '入力途中です';
+        document.getElementById('detailMessage').textContent = '必要な項目がそろうと自動で再計算されます。';
+        latestCopyText = '';
+        return;
+      }
+
+      clearSoftStatus();
       calculate({ auto: true });
     }
 
@@ -1118,6 +1388,14 @@
       console.assert(typeof saveName === 'function', 'saveName missing');
       console.assert(typeof getRatePresets === 'function', 'getRatePresets missing');
       console.assert(typeof refreshPresetOptions === 'function', 'refreshPresetOptions missing');
+      console.assert(typeof getHistories === 'function', 'getHistories missing');
+      console.assert(typeof saveCurrentHistory === 'function', 'saveCurrentHistory missing');
+      console.assert(typeof getAutoInputIssues === 'function', 'getAutoInputIssues missing');
+      setInitialResults();
+      elements.playDate.value = '';
+      setTodayIfEmpty();
+      console.assert(elements.playDate.value === getTodayString(), 'setTodayIfEmpty failed');
+      console.assert(Array.isArray(getAutoInputIssues()), 'getAutoInputIssues return failed');
 
       if (storage) {
         const originalA = storage.getItem(STORAGE_KEYS.nameA);
@@ -1145,15 +1423,37 @@
           storage.setItem(STORAGE_KEYS.ratePresets, originalPresets);
         }
         refreshPresetOptions();
+
+        const originalHistories = storage.getItem(STORAGE_KEYS.history);
+        setHistories([{ id: '1', playDateText: '2026/3/16', shopName: 'テスト店', nameA: 'A', nameB: 'B', finalMessage: 'AさんがBさんに1,000円渡せばフラットです', totalProfitText: '+0円', shareProfitText: '+0円', copyText: 'dummy' }]);
+        console.assert(getHistories().length === 1, 'history save/load failed');
+        renderHistoryList();
+        console.assert(historyList.textContent.includes('テスト店'), 'renderHistoryList failed');
+
+        if (originalHistories === null) {
+          storage.removeItem(STORAGE_KEYS.history);
+        } else {
+          storage.setItem(STORAGE_KEYS.history, originalHistories);
+        }
       }
     }
 
     setTodayIfEmpty();
     loadSavedNames();
     refreshPresetOptions();
+    renderHistoryList();
     updateRateSummary();
     setInitialResults();
     runSelfTests();
+
+    // Service Worker registration (PWA offline support)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(() => {
+          console.log('ServiceWorker registration failed');
+        });
+      });
+    }
   </script>
 </body>
 </html>
