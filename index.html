@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ノリ打ち精算" />
+  <title>ノリ打ち精算ツール</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      padding-top: env(safe-area-inset-top, 0);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px 14px 40px;
+    }
+    .header {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .section {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      margin-bottom: 14px;
+    }
+    .section h2 {
+      font-size: 18px;
+      margin: 0 0 14px;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    .field:last-child {
+      margin-bottom: 0;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-size: 16px;
+      background: #fff;
+    }
+    input.error, select.error, textarea.error {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+    textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+    .unit {
+      min-width: 24px;
+      text-align: right;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .card-title {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .primary {
+      background: #2563eb;
+      color: #fff;
+    }
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 12px;
+      align-items: center;
+      font-size: 15px;
+    }
+    .result-grid .label {
+      color: #4b5563;
+    }
+    .result-grid .value {
+      font-weight: 700;
+    }
+    .final-box {
+      margin-top: 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .final-box h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: #1d4ed8;
+    }
+    .final-box p {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+    .note {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .copy-button {
+      margin-top: 12px;
+      width: 100%;
+      background: #1d4ed8;
+      color: #ffffff;
+    }
+    .copy-status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #2563eb;
+      min-height: 18px;
+    }
+    .copy-fallback {
+      margin-top: 10px;
+      display: none;
+    }
+    .copy-fallback.show {
+      display: block;
+    }
+    .copy-fallback textarea {
+      min-height: 96px;
+      font-size: 14px;
+      background: #f9fafb;
+    }
+    .error-box {
+      display: none;
+      margin-bottom: 14px;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .error-box.show {
+      display: block;
+    }
+    .helper {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .collapsible-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+      cursor: pointer;
+    }
+    .collapsible-toggle .toggle-text {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .collapsible-toggle .toggle-icon {
+      font-size: 18px;
+      color: #6b7280;
+      transition: transform 0.2s ease;
+    }
+    .collapsible-toggle[aria-expanded="false"] .toggle-icon {
+      transform: rotate(-90deg);
+    }
+    .collapsible-content {
+      overflow: hidden;
+    }
+    .collapsible-content.is-collapsed {
+      display: none;
+    }
+    .rate-summary {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.6;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .saved-note {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #059669;
+      min-height: 18px;
+    }
+    .preset-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: end;
+      margin-top: 14px;
+    }
+    .preset-button {
+      padding: 12px 14px;
+      font-size: 14px;
+      border-radius: 12px;
+    }
+    .preset-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #059669;
+      min-height: 18px;
+    }
+    .install-box {
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .install-box h2 {
+      font-size: 16px;
+      margin: 0 0 8px;
+      color: #155e75;
+    }
+    .install-box p {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #164e63;
+    }
+    .install-box p:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="header">
+      <h1 class="title">ノリ打ち精算ツール</h1>
+      <p class="subtitle">2名専用 / パチンコ・パチスロ対応 / 入力するとその場で精算結果を計算できます</p>
+    </section>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <section class="install-box">
+      <h2>スマホで使う方法</h2>
+      <p>iPhoneは Safari の共有メニューから「ホーム画面に追加」で、アプリのように起動できます。</p>
+      <p>Android は Chrome のメニューから「ホーム画面に追加」または「インストール」を選んでください。</p>
+      <p>このファイルをスマホで開ける場所に置けば、そのまま使えます。</p>
+    </section>
+
+    <section class="section">
+      <h2>基本情報</h2>
+      <div class="field">
+        <label for="playDate">稼働日</label>
+        <input id="playDate" type="date" />
+      </div>
+      <div class="field">
+        <label for="shopName">店舗名</label>
+        <input id="shopName" type="text" placeholder="例：○○ホール" />
+      </div>
+      <div class="field">
+        <label for="memo">メモ（任意）</label>
+        <textarea id="memo" placeholder="メモを入力"></textarea>
+      </div>
+    </section>
+
+    <section class="section">
+      <button id="rateToggle" class="collapsible-toggle" type="button" aria-expanded="false" aria-controls="rateContent">
+        <span class="toggle-text">レート設定（店舗条件）</span>
+        <span class="toggle-icon">▾</span>
+      </button>
+      <div id="rateSummary" class="rate-summary">スロ 46貸し / 50交換 ｜ パチ 250貸し / 280交換 ｜ 精算 100円単位</div>
+      <div id="rateContent" class="collapsible-content is-collapsed">
+        <div class="two-col" style="margin-top: 14px;">
+          <div class="field">
+            <label for="slotLoan">スロ貸し枚数（1000円）</label>
+            <input id="slotLoan" type="number" value="46" min="1" />
+          </div>
+          <div class="field">
+            <label for="slotExchange">スロ交換枚数（1000円）</label>
+            <input id="slotExchange" type="number" value="50" min="1" />
+          </div>
+          <div class="field">
+            <label for="pachiLoan">パチ貸し玉数（1000円）</label>
+            <input id="pachiLoan" type="number" value="250" min="1" />
+          </div>
+          <div class="field">
+            <label for="pachiExchange">パチ交換玉数（1000円）</label>
+            <input id="pachiExchange" type="number" value="280" min="1" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="roundUnit">精算端数処理</label>
+          <select id="roundUnit">
+            <option value="1">1円単位</option>
+            <option value="10">10円単位</option>
+            <option value="100" selected>100円単位</option>
+          </select>
+        </div>
+        <div class="preset-row">
+          <div class="field" style="margin-bottom: 0;">
+            <label for="ratePresetSelect">店舗レートプリセット</label>
+            <select id="ratePresetSelect">
+              <option value="">プリセットを選択</option>
+            </select>
+          </div>
+          <button id="savePresetButton" class="secondary preset-button" type="button">保存</button>
+          <button id="deletePresetButton" class="secondary preset-button" type="button">削除</button>
+        </div>
+        <div id="presetNote" class="preset-note"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card-title">参加者A</div>
+      <div class="field">
+        <label for="nameA">名前</label>
+        <input id="nameA" type="text" placeholder="例：石川" autocomplete="name" />
+        <div id="savedNameNoteA" class="saved-note"></div>
+      </div>
+      <div class="field">
+        <label for="cashA">現金投資額</label>
+        <div class="input-row">
+          <input id="cashA" type="number" placeholder="0" min="0" />
+          <span class="unit">円</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="slotStartA">スロ再プレイ開始枚数</label>
+        <div class="input-row">
+          <input id="slotStartA" type="number" placeholder="0" min="0" />
+          <span class="unit">枚</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="slotEndA">スロ再プレイ終了枚数</label>
+        <div class="input-row">
+          <input id="slotEndA" type="number" placeholder="0" min="0" />
+          <span class="unit">枚</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pachiStartA">パチ再プレイ開始玉数</label>
+        <div class="input-row">
+          <input id="pachiStartA" type="number" placeholder="0" min="0" />
+          <span class="unit">玉</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pachiEndA">パチ再プレイ終了玉数</label>
+        <div class="input-row">
+          <input id="pachiEndA" type="number" placeholder="0" min="0" />
+          <span class="unit">玉</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="slotReturnA">スロ回収枚数</label>
+        <div class="input-row">
+          <input id="slotReturnA" type="number" placeholder="0" min="0" />
+          <span class="unit">枚</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pachiReturnA">パチ回収玉数</label>
+        <div class="input-row">
+          <input id="pachiReturnA" type="number" placeholder="0" min="0" />
+          <span class="unit">玉</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card-title">参加者B</div>
+      <div class="field">
+        <label for="nameB">名前</label>
+        <input id="nameB" type="text" placeholder="例：相方" autocomplete="name" />
+        <div id="savedNameNoteB" class="saved-note"></div>
+      </div>
+      <div class="field">
+        <label for="cashB">現金投資額</label>
+        <div class="input-row">
+          <input id="cashB" type="number" placeholder="0" min="0" />
+          <span class="unit">円</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="slotStartB">スロ再プレイ開始枚数</label>
+        <div class="input-row">
+          <input id="slotStartB" type="number" placeholder="0" min="0" />
+          <span class="unit">枚</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="slotEndB">スロ再プレイ終了枚数</label>
+        <div class="input-row">
+          <input id="slotEndB" type="number" placeholder="0" min="0" />
+          <span class="unit">枚</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pachiStartB">パチ再プレイ開始玉数</label>
+        <div class="input-row">
+          <input id="pachiStartB" type="number" placeholder="0" min="0" />
+          <span class="unit">玉</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pachiEndB">パチ再プレイ終了玉数</label>
+        <div class="input-row">
+          <input id="pachiEndB" type="number" placeholder="0" min="0" />
+          <span class="unit">玉</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="slotReturnB">スロ回収枚数</label>
+        <div class="input-row">
+          <input id="slotReturnB" type="number" placeholder="0" min="0" />
+          <span class="unit">枚</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pachiReturnB">パチ回収玉数</label>
+        <div class="input-row">
+          <input id="pachiReturnB" type="number" placeholder="0" min="0" />
+          <span class="unit">玉</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="actions">
+        <button id="calcButton" class="primary" type="button">今すぐ再計算</button>
+        <button id="resetButton" class="secondary" type="button">リセット</button>
+      </div>
+      <p class="note">入力すると自動で再計算されます。ボタンは手動で再計算したいとき用です。</p>
+    </section>
+
+    <section id="resultSection" class="section">
+      <h2>計算結果</h2>
+      <div class="result-grid">
+        <div class="label" id="labelAInvestment">A 総投資額</div><div class="value" id="investmentA">0円</div>
+        <div class="label" id="labelAReturn">A 総回収額</div><div class="value" id="returnA">0円</div>
+        <div class="label" id="labelAProfit">A 個人収支</div><div class="value" id="profitA">0円</div>
+        <div class="label" id="labelBInvestment">B 総投資額</div><div class="value" id="investmentB">0円</div>
+        <div class="label" id="labelBReturn">B 総回収額</div><div class="value" id="returnB">0円</div>
+        <div class="label" id="labelBProfit">B 個人収支</div><div class="value" id="profitB">0円</div>
+        <div class="label">全体総投資</div><div class="value" id="totalInvestment">0円</div>
+        <div class="label">全体総回収</div><div class="value" id="totalReturn">0円</div>
+        <div class="label">全体収支</div><div class="value" id="totalProfit">0円</div>
+        <div class="label">1人あたり収支</div><div class="value" id="shareProfit">0円</div>
+      </div>
+      <div class="final-box">
+        <h3>最終精算</h3>
+        <p id="finalMessage">入力すると自動で結果が更新されます</p>
+        <div class="helper" id="detailMessage">再プレイは開始数−終了数で自動計算します。</div>
+        <button id="copyButton" class="copy-button" type="button">精算結果をコピー</button>
+        <div id="copyStatus" class="copy-status"></div>
+        <div id="copyFallback" class="copy-fallback">
+          <div class="helper">自動コピーできないため、下の文字を手動でコピーしてください。</div>
+          <textarea id="copyFallbackText" readonly></textarea>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ids = [
+      'playDate', 'slotLoan', 'slotExchange', 'pachiLoan', 'pachiExchange', 'roundUnit',
+      'nameA', 'cashA', 'slotStartA', 'slotEndA', 'pachiStartA', 'pachiEndA', 'slotReturnA', 'pachiReturnA',
+      'nameB', 'cashB', 'slotStartB', 'slotEndB', 'pachiStartB', 'pachiEndB', 'slotReturnB', 'pachiReturnB',
+      'shopName', 'memo'
+    ];
+
+    const elements = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+    const errorBox = document.getElementById('errorBox');
+    const resultSection = document.getElementById('resultSection');
+    const rateToggle = document.getElementById('rateToggle');
+    const rateContent = document.getElementById('rateContent');
+    const rateSummary = document.getElementById('rateSummary');
+    const copyButton = document.getElementById('copyButton');
+    const copyStatus = document.getElementById('copyStatus');
+    const copyFallback = document.getElementById('copyFallback');
+    const copyFallbackText = document.getElementById('copyFallbackText');
+    const savedNameNoteA = document.getElementById('savedNameNoteA');
+    const savedNameNoteB = document.getElementById('savedNameNoteB');
+    const ratePresetSelect = document.getElementById('ratePresetSelect');
+    const savePresetButton = document.getElementById('savePresetButton');
+    const deletePresetButton = document.getElementById('deletePresetButton');
+    const presetNote = document.getElementById('presetNote');
+    const STORAGE_KEYS = {
+      nameA: 'noribuchi_name_a',
+      nameB: 'noribuchi_name_b',
+      ratePresets: 'noribuchi_rate_presets'
+    };
+    let latestCopyText = '';
+
+    document.getElementById('calcButton').addEventListener('click', () => calculate({ auto: false }));
+    document.getElementById('resetButton').addEventListener('click', resetForm);
+    rateToggle.addEventListener('click', toggleRateSection);
+    copyButton.addEventListener('click', copySettlementText);
+    savePresetButton.addEventListener('click', saveRatePreset);
+    deletePresetButton.addEventListener('click', deleteRatePreset);
+    ratePresetSelect.addEventListener('change', applySelectedPreset);
+
+    Object.values(elements).forEach((el) => {
+      if (!el) return;
+      const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+      el.addEventListener(eventName, handleAutoCalculate);
+    });
+
+    elements.nameA.addEventListener('blur', () => saveName('A'));
+    elements.nameB.addEventListener('blur', () => saveName('B'));
+
+    function getRatePresetPayload() {
+      return {
+        slotLoan: String(num(elements.slotLoan.value) || 0),
+        slotExchange: String(num(elements.slotExchange.value) || 0),
+        pachiLoan: String(num(elements.pachiLoan.value) || 0),
+        pachiExchange: String(num(elements.pachiExchange.value) || 0),
+        roundUnit: String(num(elements.roundUnit.value) || 100)
+      };
+    }
+
+    function getStorage() {
+      try {
+        return window.localStorage;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function showSavedNameNote(prefix, message) {
+      const target = prefix === 'A' ? savedNameNoteA : savedNameNoteB;
+      target.textContent = message;
+      if (message) {
+        setTimeout(() => {
+          if (target.textContent === message) {
+            target.textContent = '';
+          }
+        }, 2000);
+      }
+    }
+
+    function saveName(prefix) {
+      const storage = getStorage();
+      if (!storage) return;
+      const element = elements[`name${prefix}`];
+      const key = STORAGE_KEYS[`name${prefix}`];
+      const value = element.value.trim();
+
+      if (!key) return;
+
+      if (value) {
+        storage.setItem(key, value);
+        showSavedNameNote(prefix, '名前を保存しました。');
+      } else {
+        storage.removeItem(key);
+        showSavedNameNote(prefix, '保存した名前を削除しました。');
+      }
+    }
+
+    function loadSavedNames() {
+      const storage = getStorage();
+      if (!storage) return;
+      const savedA = storage.getItem(STORAGE_KEYS.nameA);
+      const savedB = storage.getItem(STORAGE_KEYS.nameB);
+
+      if (savedA && !elements.nameA.value.trim()) {
+        elements.nameA.value = savedA;
+      }
+      if (savedB && !elements.nameB.value.trim()) {
+        elements.nameB.value = savedB;
+      }
+    }
+
+    function getRatePresets() {
+      const storage = getStorage();
+      if (!storage) return {};
+      try {
+        const raw = storage.getItem(STORAGE_KEYS.ratePresets);
+        return raw ? JSON.parse(raw) : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function setRatePresets(presets) {
+      const storage = getStorage();
+      if (!storage) return;
+      storage.setItem(STORAGE_KEYS.ratePresets, JSON.stringify(presets));
+    }
+
+    function refreshPresetOptions(selectedName = '') {
+      const presets = getRatePresets();
+      const names = Object.keys(presets).sort((a, b) => a.localeCompare(b, 'ja'));
+      ratePresetSelect.innerHTML = '<option value="">プリセットを選択</option>';
+
+      names.forEach((name) => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        ratePresetSelect.appendChild(option);
+      });
+
+      if (selectedName && presets[selectedName]) {
+        ratePresetSelect.value = selectedName;
+      } else {
+        ratePresetSelect.value = '';
+      }
+    }
+
+    function showPresetNote(message) {
+      presetNote.textContent = message;
+      if (message) {
+        setTimeout(() => {
+          if (presetNote.textContent === message) {
+            presetNote.textContent = '';
+          }
+        }, 2500);
+      }
+    }
+
+    function saveRatePreset() {
+      const name = window.prompt('保存するプリセット名を入力してください。', elements.shopName.value.trim() || 'よく使う店舗');
+      if (name === null) return;
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        showPresetNote('プリセット名が未入力のため保存しませんでした。');
+        return;
+      }
+
+      const presets = getRatePresets();
+      presets[trimmedName] = getRatePresetPayload();
+      setRatePresets(presets);
+      refreshPresetOptions(trimmedName);
+      showPresetNote(`「${trimmedName}」を保存しました。`);
+    }
+
+    function applySelectedPreset() {
+      const selectedName = ratePresetSelect.value;
+      if (!selectedName) return;
+      const presets = getRatePresets();
+      const preset = presets[selectedName];
+      if (!preset) return;
+
+      elements.slotLoan.value = preset.slotLoan;
+      elements.slotExchange.value = preset.slotExchange;
+      elements.pachiLoan.value = preset.pachiLoan;
+      elements.pachiExchange.value = preset.pachiExchange;
+      elements.roundUnit.value = preset.roundUnit;
+      updateRateSummary();
+      showPresetNote(`「${selectedName}」を適用しました。`);
+      handleAutoCalculate();
+    }
+
+    function deleteRatePreset() {
+      const selectedName = ratePresetSelect.value;
+      if (!selectedName) {
+        showPresetNote('削除するプリセットを選択してください。');
+        return;
+      }
+      const confirmed = window.confirm(`「${selectedName}」を削除しますか？`);
+      if (!confirmed) return;
+
+      const presets = getRatePresets();
+      delete presets[selectedName];
+      setRatePresets(presets);
+      refreshPresetOptions();
+      showPresetNote(`「${selectedName}」を削除しました。`);
+    }
+
+    function num(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function yen(value) {
+      const rounded = Math.round(value);
+      return `${rounded.toLocaleString('ja-JP')}円`;
+    }
+
+    function signedYen(value) {
+      const rounded = Math.round(value);
+      const sign = rounded > 0 ? '+' : '';
+      return `${sign}${rounded.toLocaleString('ja-JP')}円`;
+    }
+
+    function roundByUnit(value, unit) {
+      if (unit <= 1) return Math.round(value);
+      return Math.round(value / unit) * unit;
+    }
+
+    function updateRateSummary() {
+      const slotLoan = num(elements.slotLoan.value) || 0;
+      const slotExchange = num(elements.slotExchange.value) || 0;
+      const pachiLoan = num(elements.pachiLoan.value) || 0;
+      const pachiExchange = num(elements.pachiExchange.value) || 0;
+      const roundMap = { '1': '1円単位', '10': '10円単位', '100': '100円単位' };
+      const roundText = roundMap[elements.roundUnit.value] || '未設定';
+      rateSummary.textContent = `スロ ${slotLoan}貸し / ${slotExchange}交換 ｜ パチ ${pachiLoan}貸し / ${pachiExchange}交換 ｜ 精算 ${roundText}`;
+    }
+
+    function toggleRateSection() {
+      const expanded = rateToggle.getAttribute('aria-expanded') === 'true';
+      rateToggle.setAttribute('aria-expanded', String(!expanded));
+      rateContent.classList.toggle('is-collapsed', expanded);
+    }
+
+    function getTodayString() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function setTodayIfEmpty() {
+      if (!elements.playDate.value) {
+        elements.playDate.value = getTodayString();
+      }
+    }
+
+    function formatDateForCopy(dateValue) {
+      if (!dateValue) return '日付未入力';
+      const [year, month, day] = dateValue.split('-');
+      return `${year}/${Number(month)}/${Number(day)}`;
+    }
+
+    function buildCopyText(a, b, totals, finalText) {
+      const shop = elements.shopName.value.trim();
+      const header = shop
+        ? `${formatDateForCopy(elements.playDate.value)} ${shop}`
+        : formatDateForCopy(elements.playDate.value);
+
+      return [
+        header,
+        `${a.name} ${signedYen(a.profit)}`,
+        `${b.name} ${signedYen(b.profit)}`,
+        `全体収支 ${signedYen(totals.totalProfit)}`,
+        `1人あたり ${signedYen(totals.shareProfit)}`,
+        `→ ${finalText}`
+      ].join('\n');
+    }
+
+    function showCopyFallback(text, message) {
+      copyFallbackText.value = text;
+      copyFallback.classList.add('show');
+      copyStatus.textContent = message;
+
+      setTimeout(() => {
+        copyFallbackText.focus();
+        copyFallbackText.select();
+        copyFallbackText.setSelectionRange(0, copyFallbackText.value.length);
+      }, 0);
+    }
+
+    async function copySettlementText() {
+      if (!latestCopyText) {
+        copyStatus.textContent = '先に計算結果を表示してください。';
+        copyFallback.classList.remove('show');
+        copyFallbackText.value = '';
+        return;
+      }
+
+      copyFallback.classList.remove('show');
+      copyFallbackText.value = '';
+
+      try {
+        if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          await navigator.clipboard.writeText(latestCopyText);
+          copyStatus.textContent = '精算結果をコピーしました。';
+          return;
+        }
+
+        const temp = document.createElement('textarea');
+        temp.value = latestCopyText;
+        temp.setAttribute('readonly', 'readonly');
+        temp.style.position = 'fixed';
+        temp.style.top = '-1000px';
+        temp.style.left = '-1000px';
+        document.body.appendChild(temp);
+        temp.focus();
+        temp.select();
+        temp.setSelectionRange(0, temp.value.length);
+
+        const copied = document.execCommand('copy');
+        document.body.removeChild(temp);
+
+        if (copied) {
+          copyStatus.textContent = '精算結果をコピーしました。';
+          return;
+        }
+
+        showCopyFallback(latestCopyText, '自動コピーできないため、下の文字を選択した状態にしました。');
+      } catch (error) {
+        showCopyFallback(latestCopyText, '自動コピーできないため、下の文字を選択した状態にしました。');
+      }
+    }
+
+    function clearErrors() {
+      errorBox.className = 'error-box';
+      errorBox.innerHTML = '';
+      document.querySelectorAll('input, select, textarea').forEach((el) => el.classList.remove('error'));
+    }
+
+    function showErrors(errors) {
+      errorBox.innerHTML = errors.map((e) => `・${e.message}`).join('<br>');
+      errorBox.className = 'error-box show';
+      errors.forEach((e) => e.element && e.element.classList.add('error'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function validate() {
+      const errors = [];
+
+      if (!elements.playDate.value) {
+        errors.push({ message: '稼働日を入力してください。', element: elements.playDate });
+      }
+      if (!elements.nameA.value.trim()) {
+        errors.push({ message: '参加者Aの名前を入力してください。', element: elements.nameA });
+      }
+      if (!elements.nameB.value.trim()) {
+        errors.push({ message: '参加者Bの名前を入力してください。', element: elements.nameB });
+      }
+
+      ['slotLoan', 'slotExchange', 'pachiLoan', 'pachiExchange'].forEach((id) => {
+        if (num(elements[id].value) <= 0) {
+          errors.push({ message: 'レート設定は0より大きい数値を入力してください。', element: elements[id] });
+        }
+      });
+
+      const pairChecks = [
+        ['slotStartA', 'slotEndA', '参加者Aのスロ再プレイ'],
+        ['pachiStartA', 'pachiEndA', '参加者Aのパチ再プレイ'],
+        ['slotStartB', 'slotEndB', '参加者Bのスロ再プレイ'],
+        ['pachiStartB', 'pachiEndB', '参加者Bのパチ再プレイ']
+      ];
+
+      pairChecks.forEach(([startId, endId, label]) => {
+        const start = num(elements[startId].value);
+        const end = num(elements[endId].value);
+        const hasStart = elements[startId].value !== '';
+        const hasEnd = elements[endId].value !== '';
+
+        if (hasStart !== hasEnd) {
+          errors.push({
+            message: `${label}は開始と終了の両方を入力してください。`,
+            element: hasStart ? elements[endId] : elements[startId]
+          });
+        }
+        if (hasStart && hasEnd && end > start) {
+          errors.push({
+            message: `${label}の終了数が開始数を上回っています。`,
+            element: elements[endId]
+          });
+        }
+      });
+
+      return errors;
+    }
+
+    function calcParticipant(prefix, rates) {
+      const cash = num(elements[`cash${prefix}`].value);
+      const slotStart = num(elements[`slotStart${prefix}`].value);
+      const slotEnd = num(elements[`slotEnd${prefix}`].value);
+      const pachiStart = num(elements[`pachiStart${prefix}`].value);
+      const pachiEnd = num(elements[`pachiEnd${prefix}`].value);
+      const slotReturn = num(elements[`slotReturn${prefix}`].value);
+      const pachiReturn = num(elements[`pachiReturn${prefix}`].value);
+
+      const slotReplayUsed = slotStart - slotEnd;
+      const pachiReplayUsed = pachiStart - pachiEnd;
+
+      const slotReplayYen = slotReplayUsed * rates.slotLoanYen;
+      const pachiReplayYen = pachiReplayUsed * rates.pachiLoanYen;
+      const totalInvestment = cash + slotReplayYen + pachiReplayYen;
+
+      const slotReturnYen = slotReturn * rates.slotExchangeYen;
+      const pachiReturnYen = pachiReturn * rates.pachiExchangeYen;
+      const totalReturn = slotReturnYen + pachiReturnYen;
+
+      return {
+        name: elements[`name${prefix}`].value.trim() || `参加者${prefix}`,
+        totalInvestment,
+        totalReturn,
+        profit: totalReturn - totalInvestment,
+        slotReplayUsed,
+        pachiReplayUsed
+      };
+    }
+
+    function setInitialResults() {
+      document.getElementById('labelAInvestment').textContent = 'A 総投資額';
+      document.getElementById('labelAReturn').textContent = 'A 総回収額';
+      document.getElementById('labelAProfit').textContent = 'A 個人収支';
+      document.getElementById('labelBInvestment').textContent = 'B 総投資額';
+      document.getElementById('labelBReturn').textContent = 'B 総回収額';
+      document.getElementById('labelBProfit').textContent = 'B 個人収支';
+      document.getElementById('investmentA').textContent = '0円';
+      document.getElementById('returnA').textContent = '0円';
+      document.getElementById('profitA').textContent = '0円';
+      document.getElementById('investmentB').textContent = '0円';
+      document.getElementById('returnB').textContent = '0円';
+      document.getElementById('profitB').textContent = '0円';
+      document.getElementById('totalInvestment').textContent = '0円';
+      document.getElementById('totalReturn').textContent = '0円';
+      document.getElementById('totalProfit').textContent = '0円';
+      document.getElementById('shareProfit').textContent = '0円';
+      document.getElementById('finalMessage').textContent = '入力すると自動で結果が更新されます';
+      savedNameNoteA.textContent = '';
+      savedNameNoteB.textContent = '';
+      document.getElementById('detailMessage').textContent = '再プレイは開始数−終了数で自動計算します。';
+      copyStatus.textContent = '';
+      copyFallback.classList.remove('show');
+      copyFallbackText.value = '';
+      presetNote.textContent = '';
+      latestCopyText = '';
+    }
+
+    function calculate(options = {}) {
+      const auto = Boolean(options.auto);
+      clearErrors();
+      const errors = validate();
+      if (errors.length > 0) {
+        showErrors(errors);
+        return false;
+      }
+
+      const rates = {
+        slotLoanYen: 1000 / num(elements.slotLoan.value),
+        slotExchangeYen: 1000 / num(elements.slotExchange.value),
+        pachiLoanYen: 1000 / num(elements.pachiLoan.value),
+        pachiExchangeYen: 1000 / num(elements.pachiExchange.value)
+      };
+
+      const a = calcParticipant('A', rates);
+      const b = calcParticipant('B', rates);
+      const totalInvestment = a.totalInvestment + b.totalInvestment;
+      const totalReturn = a.totalReturn + b.totalReturn;
+      const totalProfit = a.profit + b.profit;
+      const shareProfit = totalProfit / 2;
+      const roundUnit = num(elements.roundUnit.value);
+      const settleA = roundByUnit(a.profit - shareProfit, roundUnit);
+
+      document.getElementById('labelAInvestment').textContent = `${a.name} 総投資額`;
+      document.getElementById('labelAReturn').textContent = `${a.name} 総回収額`;
+      document.getElementById('labelAProfit').textContent = `${a.name} 個人収支`;
+      document.getElementById('labelBInvestment').textContent = `${b.name} 総投資額`;
+      document.getElementById('labelBReturn').textContent = `${b.name} 総回収額`;
+      document.getElementById('labelBProfit').textContent = `${b.name} 個人収支`;
+      document.getElementById('investmentA').textContent = yen(a.totalInvestment);
+      document.getElementById('returnA').textContent = yen(a.totalReturn);
+      document.getElementById('profitA').textContent = signedYen(a.profit);
+      document.getElementById('investmentB').textContent = yen(b.totalInvestment);
+      document.getElementById('returnB').textContent = yen(b.totalReturn);
+      document.getElementById('profitB').textContent = signedYen(b.profit);
+      document.getElementById('totalInvestment').textContent = yen(totalInvestment);
+      document.getElementById('totalReturn').textContent = yen(totalReturn);
+      document.getElementById('totalProfit').textContent = signedYen(totalProfit);
+      document.getElementById('shareProfit').textContent = signedYen(shareProfit);
+
+      const finalMessage = document.getElementById('finalMessage');
+      const detailMessage = document.getElementById('detailMessage');
+      copyStatus.textContent = '';
+
+      if (settleA > 0) {
+        finalMessage.textContent = `${a.name}が${b.name}に${yen(settleA)}渡せばフラットです`;
+      } else if (settleA < 0) {
+        finalMessage.textContent = `${b.name}が${a.name}に${yen(Math.abs(settleA))}渡せばフラットです`;
+      } else {
+        finalMessage.textContent = '精算なし（すでにフラットです）';
+      }
+
+      latestCopyText = buildCopyText(a, b, { totalProfit, shareProfit }, finalMessage.textContent);
+      detailMessage.textContent = `${a.name}の再プレイスロ使用 ${a.slotReplayUsed.toLocaleString('ja-JP')}枚 / パチ使用 ${a.pachiReplayUsed.toLocaleString('ja-JP')}玉 ｜ ${b.name}の再プレイスロ使用 ${b.slotReplayUsed.toLocaleString('ja-JP')}枚 / パチ使用 ${b.pachiReplayUsed.toLocaleString('ja-JP')}玉`;
+
+      if (!auto) {
+        resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return true;
+    }
+
+    function resetForm() {
+      clearErrors();
+      document.querySelectorAll('input, textarea').forEach((el) => {
+        if (el.type === 'date') {
+          el.value = getTodayString();
+        } else {
+          el.value = '';
+        }
+      });
+
+      loadSavedNames();
+      elements.slotLoan.value = '46';
+      elements.slotExchange.value = '50';
+      elements.pachiLoan.value = '250';
+      elements.pachiExchange.value = '280';
+      elements.roundUnit.value = '100';
+      updateRateSummary();
+      setInitialResults();
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleAutoCalculate() {
+      updateRateSummary();
+      const hasAnyInput = [
+        elements.nameA.value.trim(),
+        elements.nameB.value.trim(),
+        elements.cashA.value,
+        elements.cashB.value,
+        elements.slotStartA.value,
+        elements.slotStartB.value,
+        elements.pachiStartA.value,
+        elements.pachiStartB.value,
+        elements.slotReturnA.value,
+        elements.slotReturnB.value,
+        elements.pachiReturnA.value,
+        elements.pachiReturnB.value
+      ].some((value) => value !== '');
+
+      if (!hasAnyInput) {
+        clearErrors();
+        setInitialResults();
+        return;
+      }
+      calculate({ auto: true });
+    }
+
+    function runSelfTests() {
+      console.assert(document.querySelector('meta[name="apple-mobile-web-app-capable"]') !== null, 'apple mobile meta missing');
+      console.assert(document.querySelector('meta[name="theme-color"]') !== null, 'theme-color meta missing');
+      console.assert(roundByUnit(149, 100) === 100, 'roundByUnit 149/100 failed');
+      console.assert(roundByUnit(150, 100) === 200, 'roundByUnit 150/100 failed');
+      console.assert(formatDateForCopy('2026-03-16') === '2026/3/16', 'formatDateForCopy failed');
+      console.assert(buildCopyText(
+        { name: 'A', profit: 1200 },
+        { name: 'B', profit: -1200 },
+        { totalProfit: 0, shareProfit: 0 },
+        'BがAに1,200円渡せばフラットです'
+      ).includes('→ BがAに1,200円渡せばフラットです'), 'buildCopyText failed');
+      console.assert(yen(1234.4) === '1,234円', 'yen failed');
+      console.assert(signedYen(1200) === '+1,200円', 'signedYen positive failed');
+      console.assert(signedYen(-1200) === '-1,200円', 'signedYen negative failed');
+      showCopyFallback('test', 'test');
+      console.assert(copyFallbackText.value === 'test', 'showCopyFallback value failed');
+      console.assert(copyFallback.classList.contains('show'), 'showCopyFallback visibility failed');
+      copyFallback.classList.remove('show');
+      copyFallbackText.value = '';
+      console.assert(getRatePresetPayload().roundUnit === String(num(elements.roundUnit.value) || 100), 'getRatePresetPayload failed');
+
+      const storage = getStorage();
+      console.assert(typeof loadSavedNames === 'function', 'loadSavedNames missing');
+      console.assert(typeof saveName === 'function', 'saveName missing');
+      console.assert(typeof getRatePresets === 'function', 'getRatePresets missing');
+      console.assert(typeof refreshPresetOptions === 'function', 'refreshPresetOptions missing');
+
+      if (storage) {
+        const originalA = storage.getItem(STORAGE_KEYS.nameA);
+        const originalPresets = storage.getItem(STORAGE_KEYS.ratePresets);
+
+        storage.setItem(STORAGE_KEYS.nameA, 'テストA');
+        elements.nameA.value = '';
+        loadSavedNames();
+        console.assert(elements.nameA.value === 'テストA', 'loadSavedNames failed');
+
+        setRatePresets({ テスト店: { slotLoan: '47', slotExchange: '51', pachiLoan: '250', pachiExchange: '300', roundUnit: '10' } });
+        refreshPresetOptions('テスト店');
+        console.assert(ratePresetSelect.value === 'テスト店', 'refreshPresetOptions selection failed');
+        const presets = getRatePresets();
+        console.assert(presets['テスト店'].slotLoan === '47', 'getRatePresets failed');
+
+        if (originalA === null) {
+          storage.removeItem(STORAGE_KEYS.nameA);
+        } else {
+          storage.setItem(STORAGE_KEYS.nameA, originalA);
+        }
+        if (originalPresets === null) {
+          storage.removeItem(STORAGE_KEYS.ratePresets);
+        } else {
+          storage.setItem(STORAGE_KEYS.ratePresets, originalPresets);
+        }
+        refreshPresetOptions();
+      }
+    }
+
+    setTodayIfEmpty();
+    loadSavedNames();
+    refreshPresetOptions();
+    updateRateSummary();
+    setInitialResults();
+    runSelfTests();
+  </script>
+</body>
+</html>
